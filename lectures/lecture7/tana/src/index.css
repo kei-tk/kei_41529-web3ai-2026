@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/* 棚(Tana)のデザイントークン。和紙のような温かい白 × 墨の文字 × 棚の木目アクセント。 */
+@theme {
+  --color-washi: #f7f5f0;
+  --color-washi-deep: #efece4;
+  --color-ink: #211f1c;
+  --color-kraft: #b08968;
+  --font-display: 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif;
+  --font-sans: 'Noto Sans JP', sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-washi);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* カードが棚に収まるときのフェードイン */
+@keyframes slot-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-slot {
+  animation: slot-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* AI が読んでいるときのスキャンライン */
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(800%);
+  }
+}
+.animate-scan {
+  animation: scan 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+/* 細いスクロールバー */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d6d0c4 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d6d0c4;
+  border-radius: 99px;
+}

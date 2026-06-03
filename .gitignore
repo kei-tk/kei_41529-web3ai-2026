@@ -1,0 +1,11 @@
+# 依存・ビルド成果物
+node_modules/
+dist/
+
+# OS / エディタ
+.DS_Store
+*.log
+
+# 環境変数
+.env
+.env.local
