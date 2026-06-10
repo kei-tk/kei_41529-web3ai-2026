@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
 import type { CategoryId, OrgFile } from './types'
-import { CATEGORIES, CATEGORY_MAP } from './lib/categories'
+import { CATEGORIES } from './lib/categories'
 import { dateBucket, type DateBucket } from './lib/format'
 import { buildDemoFiles, ingestRealFiles } from './lib/ingest'
+import { classifyWithGemini, getApiKey, getModel, setApiKey, setModel } from './lib/llm'
 import Sidebar from './components/Sidebar'
 import FileCard from './components/FileCard'
 import PreviewPanel from './components/PreviewPanel'
+import SettingsModal from './components/SettingsModal'
 import IngestOverlay, { type IngestState } from './components/IngestOverlay'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -21,7 +23,12 @@ export default function App() {
   const [sort, setSort] = useState<SortKey>('date')
   const [selected, setSelected] = useState<OrgFile | null>(null)
   const [ingest, setIngest] = useState<IngestState | null>(null)
+  const [refining, setRefining] = useState<IngestState | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  // v3: Gemini(本物のLLM)モード
+  const [hasKey, setHasKey] = useState<boolean>(() => !!getApiKey())
+  const [showSettings, setShowSettings] = useState(false)
+  const [llmError, setLlmError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
@@ -38,6 +45,44 @@ export default function App() {
     await sleep(280)
     setFiles((prev) => (replace ? incoming : [...incoming, ...prev]))
     setIngest(null)
+    // v3: キーがあれば本物のLLM(Gemini)で精査して上書き
+    await refineWithLLM(incoming)
+  }
+
+  // ── v3: Gemini で中身を意味理解して再分類 ──
+  async function refineWithLLM(targets: OrgFile[]) {
+    const key = getApiKey()
+    if (!key || targets.length === 0) return
+    const model = getModel()
+    setLlmError(null)
+    setRefining({ total: targets.length, done: 0, currentName: model })
+    try {
+      const inputs = targets.map((f, i) => ({ index: i, name: f.name, ext: f.ext, content: f.textContent }))
+      const map = await classifyWithGemini(inputs, key, model, (done, total) =>
+        setRefining({ total, done, currentName: model }),
+      )
+      setFiles((prev) =>
+        prev.map((f) => {
+          const idx = targets.findIndex((t) => t.id === f.id)
+          if (idx < 0) return f
+          const r = map.get(idx)
+          return r ? { ...f, ...r, engine: 'llm' as const } : f
+        }),
+      )
+    } catch (e) {
+      setLlmError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setRefining(null)
+    }
+  }
+
+  const onSaveSettings = (key: string, model: string) => {
+    setApiKey(key)
+    setModel(model)
+    setHasKey(!!key)
+    setShowSettings(false)
+    // 既に表示中のファイルがあれば、新しい設定で再分類
+    if (key && files.length > 0) refineWithLLM(files)
   }
 
   const loadDemo = () => runIngest(buildDemoFiles(), true)
@@ -190,12 +235,37 @@ export default function App() {
             <option value="size">サイズ順</option>
           </select>
 
-          {files.length > 0 && (
-            <div className="ml-auto hidden items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 sm:flex">
-              ✅ {files.length}件を{Object.values(categoryCounts).filter((n) => n > 0).length}つの棚に整理
-            </div>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {files.length > 0 && (
+              <div className="hidden items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100 lg:flex">
+                ✅ {files.length}件を{Object.values(categoryCounts).filter((n) => n > 0).length}つの棚に整理
+              </div>
+            )}
+            {/* v3: 分類エンジンの表示。クリックで設定 */}
+            <button
+              onClick={() => setShowSettings(true)}
+              title="AIモード設定"
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ring-1 transition ${
+                hasKey
+                  ? 'bg-indigo-50 text-indigo-700 ring-indigo-200 hover:bg-indigo-100'
+                  : 'bg-white text-stone-500 ring-stone-200 hover:text-ink'
+              }`}
+            >
+              {hasKey ? '🤖 Geminiモード' : '📖 ルールベース'}
+              <span className="text-stone-400">⚙︎</span>
+            </button>
+          </div>
         </header>
+
+        {/* v3: LLM エラー通知 */}
+        {llmError && (
+          <div className="flex items-center justify-between gap-3 border-b border-rose-100 bg-rose-50 px-6 py-2 text-xs text-rose-700">
+            <span className="truncate">⚠️ Gemini分類に失敗(ルールベースのまま表示中): {llmError}</span>
+            <button onClick={() => setLlmError(null)} className="shrink-0 font-bold hover:underline">
+              閉じる
+            </button>
+          </div>
+        )}
 
         {/* 本体 */}
         <div className="relative flex-1 overflow-y-auto px-6 py-5">
@@ -258,6 +328,22 @@ export default function App() {
 
       {selected && <PreviewPanel file={selected} onClose={() => setSelected(null)} />}
       {ingest && <IngestOverlay state={ingest} />}
+      {refining && (
+        <IngestOverlay
+          state={refining}
+          title="Geminiが中身を精査中…"
+          subtitle="本物のLLMが意味を理解して棚を判定しています"
+          icon="🤖"
+        />
+      )}
+      {showSettings && (
+        <SettingsModal
+          initialKey={getApiKey()}
+          initialModel={getModel()}
+          onSave={onSaveSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </div>
   )
 }

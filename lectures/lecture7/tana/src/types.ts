@@ -26,4 +26,5 @@ export interface OrgFile {
   tags: string[]
   summary?: string // AI が付ける一言サマリ
   confidence: number // 0-100 推定の自信度
+  engine?: 'rule' | 'llm' // どの分類エンジンが付けたか(v3: Gemini=llm / 従来=rule)
 }

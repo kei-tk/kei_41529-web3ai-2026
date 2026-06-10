@@ -1,4 +1,4 @@
-import type { CategoryId, OrgFile } from '../types'
+import type { CategoryId } from '../types'
 
 // ── 棚(Tana)の分類エンジン ──────────────────────────────
 // VPC の核心:「DLした瞬間にAIが中身を読んで自動でフォルダ分類」を再現する部分。

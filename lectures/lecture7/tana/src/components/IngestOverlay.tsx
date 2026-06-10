@@ -6,20 +6,30 @@ export interface IngestState {
   currentName: string
 }
 
-export default function IngestOverlay({ state }: { state: IngestState }) {
+export default function IngestOverlay({
+  state,
+  title = 'AIが中身を読んでいます…',
+  subtitle = '名前・本文・拡張子から棚を判定中',
+  icon = '🗄️',
+}: {
+  state: IngestState
+  title?: string
+  subtitle?: string
+  icon?: string
+}) {
   const pct = Math.round((state.done / Math.max(1, state.total)) * 100)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm">
       <div className="w-[min(440px,90vw)] rounded-3xl bg-white p-8 shadow-2xl ring-1 ring-black/5">
         <div className="mb-5 flex items-center gap-3">
           <div className="relative grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-ink">
-            <span className="text-2xl">🗄️</span>
+            <span className="text-2xl">{icon}</span>
             {/* スキャンライン */}
             <span className="animate-scan pointer-events-none absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-emerald-300/0 via-emerald-300/70 to-emerald-300/0" />
           </div>
           <div>
-            <div className="font-display text-lg font-black">AIが中身を読んでいます…</div>
-            <div className="text-xs text-stone-500">名前・本文・拡張子から棚を判定中</div>
+            <div className="font-display text-lg font-black">{title}</div>
+            <div className="text-xs text-stone-500">{subtitle}</div>
           </div>
         </div>
 

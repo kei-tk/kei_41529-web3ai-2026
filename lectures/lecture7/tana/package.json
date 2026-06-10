@@ -1,7 +1,7 @@
 {
   "name": "tana",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "description": "棚 (Tana) — 散らかったDownloadsを、AIが中身を読んで自動で棚に戻す整理ダッシュボード",
   "scripts": {

@@ -34,8 +34,13 @@ export default function PreviewPanel({ file, onClose }: { file: OrgFile; onClose
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           {/* AI の判定 */}
           <section className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-4 ring-1 ring-emerald-100">
-            <div className="mb-2 flex items-center gap-1.5 text-xs font-black text-emerald-700">
-              <span>✨</span> AIの判定
+            <div className="mb-2 flex items-center justify-between text-xs font-black text-emerald-700">
+              <span className="flex items-center gap-1.5">
+                <span>✨</span> AIの判定
+              </span>
+              <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] text-stone-500">
+                {file.engine === 'llm' ? '🤖 Gemini' : '📖 ルールベース'}
+              </span>
             </div>
             <p className="text-sm leading-relaxed text-stone-700">{file.summary}</p>
             <div className="mt-3 flex items-center gap-2">

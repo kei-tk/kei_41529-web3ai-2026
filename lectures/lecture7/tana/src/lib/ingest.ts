@@ -18,6 +18,7 @@ function buildOrgFile(name: string, sizeKB: number, modified: number, textConten
     modified: nameDate ?? modified,
     textContent,
     ...result,
+    engine: 'rule',
   }
 }
 
